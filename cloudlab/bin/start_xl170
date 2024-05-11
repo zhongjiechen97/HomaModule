@@ -24,7 +24,7 @@ for arg in $@; do
 if [ $# -eq 1 ]; then
     homa=$1
 else
-    homa=~/homaModule/homa.ko
+    homa=~/HomaModule/homa.ko
 fi
 
 sudo rmmod homa || true
