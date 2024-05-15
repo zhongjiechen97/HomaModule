@@ -27,7 +27,10 @@ else
     homa=~/HomaModule/homa.ko
 fi
 
-sudo rmmod homa || true
+sudo ethtool -G $ni rx 2048 tx 2048
+sudo ethtool -L $ni combined 20
+
+sudo rmmod homa > /dev/null 2>&1 || true
 sudo insmod $homa
 
 if [ $xl170 -eq 1 ] ; then
