@@ -72,7 +72,8 @@ default_defaults = {
     # unlimited load (throttle queue inserts take a long time).
     'client_max':          200,
     'client_ports':        3,
-    'log_dir':             'logs/' + time.strftime('%Y%m%d%H%M%S'),
+    # 'log_dir':             'logs/' + time.strftime('%Y%m%d%H%M%S'),
+    'log_dir':             'logs/' + '20240518103320',
     'mtu':                 0,
     'no_trunc':            '',
     'protocol':            'homa',
@@ -80,6 +81,10 @@ default_defaults = {
     'port_threads':        3,
     'seconds':             5,
     'server_ports':        3,
+    'ebpf_client_ports':   4,
+    'ebpf_port_receivers': 1,
+    'ebpf_server_ports':   4,
+    'ebpf_port_threads':   1,
     'tcp_client_ports':    4,
     'tcp_port_receivers':  1,
     'tcp_server_ports':    8,
@@ -389,7 +394,7 @@ def start_nodes(r, options):
             continue
         vlog("Starting cp_node on node%d" % (id))
         node = subprocess.Popen(["ssh", "-o", "StrictHostKeyChecking=no",
-                "node%d" % (id), "cp_node"], encoding="utf-8",
+                "node%d" % (id), "~/HomaModule/util/cp_node"], encoding="utf-8",
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
         fl = fcntl.fcntl(node.stdin, fcntl.F_GETFL)
@@ -532,6 +537,9 @@ def start_servers(r, options):
         do_cmd("server --ports %d --port-threads %d --protocol %s %s" % (
                 options.server_ports, options.port_threads,
                 options.protocol, options.ipv6), r)
+    elif options.protocol == "ebpf":
+        do_cmd("server --ports %d --port-threads %d" % (
+        options.ebpf_server_ports, options.ebpf_port_threads), r)
     else:
         do_cmd("server --ports %d --port-threads %d --protocol %s %s" % (
                 options.tcp_server_ports, options.tcp_port_threads,
@@ -591,6 +599,20 @@ def run_experiment(name, clients, options):
                     options.ipv6);
             if "unloaded" in options:
                 command += " --unloaded %d" % (options.unloaded)
+        elif options.protocol == 'ebpf':
+                command = "client --ports %d --port-receivers %d --server-ports %d " \
+                "--workload %s --server-nodes %d --first-server %d " \
+                "--gbps %.3f --client-max %d --id %d %s" % (
+                options.ebpf_client_ports,
+                options.ebpf_port_receivers,
+                options.ebpf_server_ports,
+                options.workload,
+                num_servers,
+                first_server,
+                options.gbps,
+                options.client_max,
+                id,
+                options.ipv4);
         else:
             if "no_trunc" in options:
                 trunc = '--no-trunc'

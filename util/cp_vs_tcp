@@ -19,7 +19,9 @@
 
 from cperf import *
 
-load_info = [["w2", 3.2], ["w3", 14], ["w4", 20], ["w5", 20]]
+load_info = [["w2", 1.6], ["w3", 14], ["w4", 20], ["w5", 20]]
+# load_info = [["w2", 3.2], ["w3", 14], ["w4", 20], ["w5", 20]]
+# load_info = [["w2", 1.6], ["w3", 7], ["w4", 10], ["w5", 10]]
 
 parser = get_parser(description=
         'Measures slowdown as a function of message size for Homa and TCP.',
@@ -30,6 +32,9 @@ parser.add_argument('--tcp', dest='tcp', type=boolean,
 parser.add_argument('--dctcp', dest='dctcp', type=boolean,
         default=False, help="Boolean value:: indicates whether measurements "
                 "should be run on DCTCP (default: false)")
+parser.add_argument('--ebpf', dest='ebpf', type=boolean,
+        default=False, help="Boolean value:: indicates whether measurements "
+                "should be run on ebpf (default: false)")
 parser.add_argument('--servers', dest='num_servers', type=int, metavar='count',
         default=0, help="If nonzero, clients and servers will be segregated "
         "and this value indicates the number of server nodes; all other "
@@ -70,6 +75,14 @@ if not options.plot_only:
         homa_exp = "homa_" + workload;
         tcp_exp = "tcp_" + workload;
         dctcp_exp = "dctcp_" + workload;
+        if workload == "w2":
+            options.client_max = 80
+        elif workload == "w3":
+            options.client_max = 60
+        elif workload == "w4":
+            options.client_max = 50
+        elif workload == "w5":
+            options.client_max = 20
         try:
             options.protocol = "homa"
             start_servers(range(1, 2), options)
@@ -117,6 +130,7 @@ for workload, bw in load_info:
     homa_exp = "homa_" + workload;
     tcp_exp = "tcp_" + workload;
     dctcp_exp = "dctcp_" + workload;
+    ebpf_exp = "ebpf_" + workload;
 
     set_unloaded(unloaded_exp)
 
@@ -131,11 +145,15 @@ for workload, bw in load_info:
     if options.dctcp:
         plot_slowdown(ax, dctcp_exp, "p99", "DCTCP P99", color=dctcp_color)
         plot_slowdown(ax, dctcp_exp, "p50", "DCTCP P50", color=dctcp_color2)
+    if options.ebpf:
+        plot_slowdown(ax, ebpf_exp, "p99", "eBPF P99", color=dctcp_color)
+        plot_slowdown(ax, ebpf_exp, "p50", "eBPF P50", color=dctcp_color2)
+
     plot_slowdown(ax, homa_exp, "p99", "Homa P99", color=homa_color)
     plot_slowdown(ax, homa_exp, "p50", "Homa P50", color=homa_color2)
     ax.legend(loc="upper right", prop={'size': 9})
     plt.tight_layout()
-    plt.savefig("%s/reports/vs_tcp_%s.pdf" % (options.log_dir, workload))
+    plt.savefig("%s/reports/vs_tcp_ebpf_%s.pdf" % (options.log_dir, workload))
 
     # Generate CDF of small-message RTTs.
     log("Generating short message CDF for %s" % (workload))
@@ -145,12 +163,16 @@ for workload, bw in load_info:
         tcp_x, tcp_y = get_short_cdf(tcp_exp)
     if options.dctcp:
         dctcp_x, dctcp_y = get_short_cdf(dctcp_exp)
+    if options.ebpf:
+        ebpf_x, ebpf_y = get_short_cdf(ebpf_exp)
     start_cdf_plot(title, 10, 0.99e05, 1e-05, "RTT (usecs)",
             "Cumulative Fraction Short Messages")
     if options.tcp:
         plt.plot(tcp_x, tcp_y, label="TCP", color=tcp_color)
     if options.dctcp:
         plt.plot(dctcp_x, dctcp_y, label="DCTCP", color=dctcp_color)
+    if options.ebpf:
+        plt.plot(ebpf_x, ebpf_y, label="eBPF", color=dctcp_color)
     plt.plot(homa_x, homa_y, label="Homa", color=homa_color)
     plt.plot(unloaded_x, unloaded_y, label="Homa best case", color=unloaded_color)
     plt.legend(loc="upper right", prop={'size': 9})
