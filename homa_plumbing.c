@@ -63,7 +63,6 @@ const struct proto_ops homa_proto_ops = {
 	.sendmsg	   = inet_sendmsg,
 	.recvmsg	   = inet_recvmsg,
 	.mmap		   = sock_no_mmap,
-	.sendpage	   = sock_no_sendpage,
 	.set_peek_off	   = sk_set_peek_off,
 };
 
@@ -85,7 +84,6 @@ const struct proto_ops homav6_proto_ops = {
 	.sendmsg	   = inet_sendmsg,
 	.recvmsg	   = inet_recvmsg,
 	.mmap		   = sock_no_mmap,
-	.sendpage	   = sock_no_sendpage,
 	.set_peek_off	   = sk_set_peek_off,
 };
 
@@ -108,7 +106,6 @@ struct proto homa_prot = {
 	.getsockopt	   = homa_getsockopt,
 	.sendmsg	   = homa_sendmsg,
 	.recvmsg	   = homa_recvmsg,
-	.sendpage	   = homa_sendpage,
 	.backlog_rcv       = homa_backlog_rcv,
 	.release_cb	   = ip4_datagram_release_cb,
 	.hash		   = homa_hash,
@@ -136,7 +133,6 @@ struct proto homav6_prot = {
 	.getsockopt	   = homa_getsockopt,
 	.sendmsg	   = homa_sendmsg,
 	.recvmsg	   = homa_recvmsg,
-	.sendpage	   = homa_sendpage,
 	.backlog_rcv       = homa_backlog_rcv,
 	.release_cb	   = ip6_datagram_release_cb,
 	.hash		   = homa_hash,
@@ -723,7 +719,7 @@ int homa_disconnect(struct sock *sk, int flags) {
  *
  * Return: 0 on success, otherwise a negative errno.
  */
-int homa_ioc_abort(struct sock *sk, unsigned long arg) {
+int homa_ioc_abort(struct sock *sk, int *arg) {
 	int ret = 0;
 	struct homa_sock *hsk = homa_sk(sk);
 	struct homa_abort_args args;
@@ -761,7 +757,7 @@ int homa_ioc_abort(struct sock *sk, unsigned long arg) {
  *
  * Return: 0 on success, otherwise a negative errno.
  */
-int homa_ioctl(struct sock *sk, int cmd, unsigned long arg) {
+int homa_ioctl(struct sock *sk, int cmd, int *arg) {
 	int result;
 	__u64 start = get_cycles();
 

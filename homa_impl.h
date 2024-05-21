@@ -3378,8 +3378,8 @@ extern enum hrtimer_restart
                 homa_hrtimer(struct hrtimer *timer);
 extern int      homa_init(struct homa *homa);
 extern void     homa_incoming_sysctl_changed(struct homa *homa);
-extern int      homa_ioc_abort(struct sock *sk, unsigned long arg);
-extern int      homa_ioctl(struct sock *sk, int cmd, unsigned long arg);
+extern int      homa_ioc_abort(struct sock *sk, int *arg);
+extern int      homa_ioctl(struct sock *sk, int cmd, int *arg);
 extern void     homa_log_throttled(struct homa *homa);
 extern int      homa_message_in_init(struct homa_rpc *rpc, int length,
 		    int unsched);
