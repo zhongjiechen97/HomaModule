@@ -248,6 +248,9 @@ int homa_grant_send(struct homa_rpc *rpc, struct homa *homa)
 	tt_record4("sending grant for id %llu, offset %d, priority %d, "
 			"increment %d", rpc->id, rpc->msgin.granted,
 			rpc->msgin.priority, increment);
+	printk("sending grant for id %llu, offset %d, priority %d, "
+			"increment %d", rpc->id, rpc->msgin.granted,
+			rpc->msgin.priority, increment);
 	homa_xmit_control(GRANT, &grant, sizeof(grant),rpc);
 	return 1;
 }

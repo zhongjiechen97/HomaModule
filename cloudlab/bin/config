@@ -235,7 +235,7 @@ def print_rss():
     cores will handle them)
     """
 
-    nic = get_interfaces()[0]
+    nic = "ens1f1np1"
     irqs = get_nic_irqs()
     num_channels = -1
     for line in subprocess.run(["ethtool", "-l", nic], stdout=subprocess.PIPE,
@@ -437,7 +437,7 @@ def config_lb(config):
         raise Exception('Bad load balancing config "%s"; must be '
                 'xl170_default, gen2, gen3, or gen3_alt' % (config))
 
-    subprocess.run(["sudo", "ethtool", "-L", get_interfaces()[0], "combined",
+    subprocess.run(["sudo", "ethtool", "-L", "ens1f1np1", "combined",
           str(len(cores))], check=True)
 
     irqs = get_nic_irqs()
@@ -482,7 +482,7 @@ def config_nic():
     Configure the NIC for best performance (turn off interrupt delaying
     mechanisms).
     """
-    interface = get_interfaces()[0]
+    interface = "ens1f1np1"
     subprocess.run(["sudo", "ethtool", "-C", interface, "adaptive-rx", "off"],
             check=False)
     subprocess.run(["sudo", "ethtool", "-C", interface, "rx-usecs", "5",
@@ -536,7 +536,7 @@ def config_rps():
     Enable RPS (Receive Packet Steering) and RFS (Receive Flow Steering).
     """
 
-    interface = get_interfaces()[0]
+    interface = "ens1f1np1"
     mask = get_core_mask()
     subprocess.run(["sudo", "sysctl", "-w",
             "net.core.rps_sock_flow_entries=32768"], check=True)
@@ -636,8 +636,8 @@ while i < len(sys.argv):
         print_help()
         exit(0)
     elif arg == "default":
-        config_homa("~/bin/homa.ko")
-        config_ipv6(get_num_nodes(), vlan)
+        config_homa("~/HomaModule/homa.ko")
+        # config_ipv6(get_num_nodes(), vlan)
         config_nic()
         config_power()
         config_rps()
