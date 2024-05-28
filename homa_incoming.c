@@ -159,7 +159,7 @@ void homa_add_packet(struct homa_rpc *rpc, struct sk_buff *skb)
 	tt_record4("homa_add_packet discarding packet for id %d, "
 			"offset %d, length %d, retransmit %d",
 			rpc->id, start, length, h->retransmit);
-	kfree_skb(skb);
+	homa_skb_free(skb);
 	return;
 
 	keep:
@@ -273,8 +273,7 @@ int homa_copy_to_user(struct homa_rpc *rpc)
 					start_offset, end_offset, rpc->id);
 			end_offset = 0;
 		}
-		for (i = 0; i < n; i++)
-			kfree_skb(skbs[i]);
+		homa_skb_free_many(skbs, n);
 		tt_record2("finished freeing %d skbs for id %d",
 				n, rpc->id);
 		n = 0;
@@ -291,12 +290,13 @@ int homa_copy_to_user(struct homa_rpc *rpc)
 }
 
 /**
- * homa_get_resend_range() - Given a message for which some input data
- * is missing, find the first range of missing data.
- * @msgin:     Message for which not all granted data has been received.
+ * homa_get_resend_range() - Find the first range of data in a message
+ * that has been granted but not yet received.
+ * @msgin:     Message to examine.
  * @resend:    The @offset and @length fields of this structure will be
  *             filled in with information about the first missing range
- *             in @msgin.
+ *             in @msgin. If there is no missing data to resend (i.e. all
+ *             granted data has been received), the @length field will be zero.
  */
 void homa_get_resend_range(struct homa_message_in *msgin,
 		struct resend_header *resend)
@@ -373,7 +373,7 @@ void homa_dispatch_pkts(struct sk_buff *skb, struct homa *homa)
 						h->common.type);
 		while (skb != NULL) {
 			next = skb->next;
-			kfree_skb(skb);
+			homa_skb_free(skb);
 			skb = next;
 		}
 		return;
@@ -507,7 +507,7 @@ void homa_dispatch_pkts(struct sk_buff *skb, struct homa *homa)
 		continue;
 
 		discard:
-		kfree_skb(skb);
+		homa_skb_free(skb);
 	}
 	if (rpc != NULL)
 		homa_grant_check_rpc(rpc);
@@ -616,7 +616,7 @@ void homa_data_pkt(struct sk_buff *skb, struct homa_rpc *rpc)
 	return;
 
     discard:
-	kfree_skb(skb);
+	homa_skb_free(skb);
 	UNIT_LOG("; ", "homa_data_pkt discarded packet");
 }
 
@@ -649,7 +649,7 @@ void homa_grant_pkt(struct sk_buff *skb, struct homa_rpc *rpc)
 		rpc->msgout.sched_priority = h->priority;
 		homa_xmit_data(rpc, false);
 	}
-	kfree_skb(skb);
+	homa_skb_free(skb);
 }
 
 /**
@@ -681,14 +681,25 @@ void homa_resend_pkt(struct sk_buff *skb, struct homa_rpc *rpc,
 			rpc->id, ntohl(h->offset), ntohl(h->length),
 			h->priority);
 
-	if (!homa_is_client(rpc->id)) {
-		/* We are the server for this RPC. */
-		if (rpc->state != RPC_OUTGOING) {
+	if (!homa_is_client(rpc->id) && rpc->state != RPC_OUTGOING) {
+		/* We are the server for this RPC. If we haven't received
+		 * all of the bytes we've granted then request a resend
+		 * of the missing bytes; otherwise just send a BUSY.
+		 */
+		homa_get_resend_range(&rpc->msgin, h);
+		if (ntohl(h->length) > 0) {
+			tt_record4("sending RESEND from resend RPC id %llu, "
+					"client 0x%x:%d offset %d",
+					rpc->id, tt_addr(rpc->peer->addr),
+					rpc->dport, ntohl(h->offset));
+			h->priority = rpc->hsk->homa->num_priorities -1;
+			homa_xmit_control(RESEND, h, sizeof(*h), rpc);
+		} else {
 			tt_record2("sending BUSY from resend, id %d, state %d",
 					rpc->id, rpc->state);
 			homa_xmit_control(BUSY, &busy, sizeof(busy), rpc);
-			goto done;
 		}
+		goto done;
 	}
 	if (rpc->msgout.next_xmit_offset < rpc->msgout.granted) {
 		/* We have chosen not to transmit data from this message;
@@ -713,7 +724,7 @@ void homa_resend_pkt(struct sk_buff *skb, struct homa_rpc *rpc,
 	}
 
     done:
-	kfree_skb(skb);
+	homa_skb_free(skb);
 }
 
 /**
@@ -763,7 +774,7 @@ void homa_unknown_pkt(struct sk_buff *skb, struct homa_rpc *rpc)
 		INC_METRIC(server_rpcs_unknown, 1);
 	}
 done:
-	kfree_skb(skb);
+	homa_skb_free(skb);
 }
 
 /**
@@ -786,7 +797,7 @@ void homa_cutoffs_pkt(struct sk_buff *skb, struct homa_sock *hsk)
 			peer->unsched_cutoffs[i] = ntohl(h->unsched_cutoffs[i]);
 		peer->cutoff_version = h->cutoff_version;
 	}
-	kfree_skb(skb);
+	homa_skb_free(skb);
 }
 
 /**
@@ -841,7 +852,7 @@ void homa_need_ack_pkt(struct sk_buff *skb, struct homa_sock *hsk,
 			"other acks", id, tt_addr(saddr), ntohs(ack.num_acks));
 
     done:
-	kfree_skb(skb);
+	homa_skb_free(skb);
 }
 
 /**
@@ -872,7 +883,7 @@ void homa_ack_pkt(struct sk_buff *skb, struct homa_sock *hsk,
 	tt_record3("ACK received for id %d, peer 0x%x, with %d other acks",
 			homa_local_id(h->common.sender_id),
 			tt_addr(saddr), count);
-	kfree_skb(skb);
+	homa_skb_free(skb);
 }
 
 /**

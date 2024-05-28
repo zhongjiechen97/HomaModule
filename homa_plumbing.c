@@ -894,21 +894,19 @@ int homa_sendmsg(struct sock *sk, struct msghdr *msg, size_t length) {
 
 	if (!args.id) {
 		/* This is a request message. */
-		INC_METRIC(send_calls, 1);
-		tt_record4("homa_sendmsg request, target 0x%x:%d, id %u, length %d",
-				(addr->in6.sin6_family == AF_INET)
-				? ntohl(addr->in4.sin_addr.s_addr)
-				: tt_addr(addr->in6.sin6_addr),
-				ntohs(addr->in6.sin6_port),
-				atomic64_read(&hsk->homa->next_outgoing_id),
-				length);
-
 		rpc = homa_rpc_new_client(hsk, addr);
 		if (IS_ERR(rpc)) {
 			result = PTR_ERR(rpc);
 			rpc = NULL;
 			goto error;
 		}
+		INC_METRIC(send_calls, 1);
+		tt_record4("homa_sendmsg request, target 0x%x:%d, id %u, length %d",
+				(addr->in6.sin6_family == AF_INET)
+				? ntohl(addr->in4.sin_addr.s_addr)
+				: tt_addr(addr->in6.sin6_addr),
+				ntohs(addr->in6.sin6_port), rpc->id,
+				length);
 		rpc->completion_cookie = args.completion_cookie;
 		result = homa_message_out_init(rpc, &msg->msg_iter, 1);
 		if (result)
@@ -1343,7 +1341,7 @@ int homa_softirq(struct sk_buff *skb) {
 
 		discard:
 		*prev_link = skb->next;
-		kfree_skb(skb);
+		homa_skb_free(skb);
 	}
 
 	/* Now process the longer packets. Each iteration of this loop
@@ -1406,7 +1404,7 @@ int homa_softirq(struct sk_buff *skb) {
 int homa_backlog_rcv(struct sock *sk, struct sk_buff *skb)
 {
 	printk(KERN_WARNING "unimplemented backlog_rcv invoked on Homa socket\n");
-	kfree_skb(skb);
+	homa_skb_free(skb);
 	return 0;
 }
 

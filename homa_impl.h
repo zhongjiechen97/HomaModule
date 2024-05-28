@@ -78,6 +78,14 @@ extern void mock_rcu_read_unlock(void);
 extern void *mock_kmalloc(size_t size, gfp_t flags);
 #endif
 
+/* Null out things that confuse VSCode Intellisense */
+#ifdef __VSCODE__
+#define raw_smp_processor_id() 1
+#define BUG()
+#define BUG_ON(...)
+#define set_current_state(...)
+#endif
+
 #include "homa.h"
 #include "timetrace.h"
 
@@ -2214,6 +2222,28 @@ struct homa_metrics {
 	__u64 priority_packets[HOMA_MAX_PRIORITIES];
 
 	/**
+	 * @skb_allocs: total number of calls to homa_skb_new.
+	 */
+	__u64 skb_allocs;
+
+	/**
+	 * @skb_alloc_cycles: total time spent allocating sk_buffs, as
+	 * measured with get_cycles().
+	 */
+	__u64 skb_alloc_cycles;
+
+	/**
+	 * @skb_frees: total number of calls to homa_skb_free.
+	 */
+	__u64 skb_frees;
+
+	/**
+	 *  @skb_free_cycles: total time spent freeing sk_buffs, as
+	 * measured with get_cycles().
+	 */
+	__u64 skb_free_cycles;
+
+	/**
 	 * @requests_received: total number of request messages received.
 	 */
 	__u64 requests_received;
@@ -3473,6 +3503,10 @@ extern int      homa_sendpage(struct sock *sk, struct page *page, int offset,
 extern int      homa_setsockopt(struct sock *sk, int level, int optname,
                     sockptr_t __user optval, unsigned int optlen);
 extern int      homa_shutdown(struct socket *sock, int how);
+extern void     homa_skb_free(struct sk_buff *skb);
+extern void     homa_skb_free_many(struct sk_buff **skbs, int count);
+extern struct sk_buff
+	       *homa_skb_new(int length);
 extern int      homa_snprintf(char *buffer, int size, int used,
                     const char* format, ...)
                     __attribute__((format(printf, 4, 5)));
