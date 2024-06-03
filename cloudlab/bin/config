@@ -265,11 +265,12 @@ def config_mtu(size):
     """
     Set the maximum allowable packet length for this node to size.
     """
-    [interface, vlan] = get_interfaces()
+    # [interface, vlan] = get_interfaces()
+    interface = "ens1f1np1"
     subprocess.run(["sudo", "ip", "link", "set", interface, "mtu", str(size)],
             check=True)
-    subprocess.run(["sudo", "ip", "link", "set", vlan, "mtu", str(size)],
-            check=True)
+    # subprocess.run(["sudo", "ip", "link", "set", vlan, "mtu", str(size)],
+    #         check=True)
     print("MTU set to %d bytes" % (size))
 
 def config_nic():
@@ -277,7 +278,8 @@ def config_nic():
     Configure the NIC for best performance (turn off interrupt delaying
     mechanisms).
     """
-    interface = get_interfaces()[0]
+    # interface = get_interfaces()[0]
+    interface = "ens1f1np1"
     subprocess.run(["sudo", "ethtool", "-C", interface, "adaptive-rx", "off"],
             check=False)
     subprocess.run(["sudo", "ethtool", "-C", interface, "rx-usecs", "5",
@@ -294,7 +296,7 @@ def config_power():
         # C-states are disabled, then so is Turbo mode, and that will hurt
         # peak peformance.
         print("Configuring power settings for Intel CPUs")
-        subprocess.run(["sudo", "cpupower", "frequency-set", "-g",
+        subprocess.run(["sudo", "cpufreq-set", "-g",
                 "performance"], check=True)
     elif (type == "c6525-100g") or (type == "c6525-25g"):
         # AMD 7402P (EPYC Rome processor); don't know of any appropriate
@@ -308,7 +310,8 @@ def config_rps():
     Enable RPS (Receive Packet Steering) and RFS (Receive Flow Steering).
     """
 
-    interface = get_interfaces()[0]
+    # interface = get_interfaces()[0]
+    interface = "ens1f1np1"
     mask = get_core_mask()
     subprocess.run(["sudo", "sysctl", "-w",
             "net.core.rps_sock_flow_entries=32768"], check=True)
@@ -352,8 +355,8 @@ while i < len(sys.argv):
         print_help()
         exit(0)
     elif arg == "default":
-        config_homa("~/bin/homa.ko")
-        config_ipv6(10, vlan)
+        config_homa("~/HomaModule/homa.ko")
+        # config_ipv6(10, vlan)
         config_nic()
         config_power()
         config_rps()
