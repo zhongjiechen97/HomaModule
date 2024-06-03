@@ -72,8 +72,8 @@ default_defaults = {
     # unlimited load (throttle queue inserts take a long time).
     'client_max':          200,
     'client_ports':        3,
-    # 'log_dir':             'logs/' + time.strftime('%Y%m%d%H%M%S'),
-    'log_dir':             'logs/' + '20240518103320',
+    'log_dir':             'logs/' + time.strftime('%Y%m%d%H%M%S'),
+    # 'log_dir':             'logs/' + '20240518103320',
     'mtu':                 0,
     'no_trunc':            '',
     'protocol':            'homa',
@@ -647,7 +647,7 @@ def run_experiment(name, clients, options):
             time.sleep(2)
             vlog("Recording initial metrics")
             for id in active_nodes:
-                subprocess.run(["ssh", "node%d" % (id), "metrics.py"],
+                subprocess.run(["ssh", "node%d" % (id), "~/HomaModule/util/metrics.py"],
                         stdout=subprocess.DEVNULL)
         if not "no_rtt_files" in options:
             do_cmd("dump_times /dev/null", clients)
@@ -668,7 +668,7 @@ def run_experiment(name, clients, options):
         vlog("Recording final metrics")
         for id in active_nodes:
             f = open("%s/%s-%d.metrics" % (options.log_dir, name, id), 'w')
-            subprocess.run(["ssh", "node%d" % (id), "metrics.py"], stdout=f);
+            subprocess.run(["ssh", "node%d" % (id), "~/HomaModule/util/metrics.py"], stdout=f);
             f.close()
         shutil.copyfile("%s/%s-%d.metrics" % (options.log_dir, name, first_server),
                 "%s/reports/%s-%d.metrics" % (options.log_dir, name, first_server))
