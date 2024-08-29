@@ -17,6 +17,8 @@
  * the cluster_perf test.
  */
 
+#define UNIDIR
+
 #include <errno.h>
 #include <execinfo.h>
 #include <fcntl.h>
@@ -1095,6 +1097,8 @@ void homa_server::server(int thread_id, server_metrics *metrics)
 			time_trace::freeze();
 			kfreeze();
 		}
+
+        #ifndef UNIDIR
 		if ((header->short_response) && (header->length > 100)) {
 			header->length = 100;
 		}
@@ -1121,6 +1125,37 @@ void homa_server::server(int thread_id, server_metrics *metrics)
 		metrics->requests++;
 		metrics->bytes_in += length;
 		metrics->bytes_out += header->length;
+        #else
+        int new_header_length = header->length;
+        if ((header->short_response) && (header->length > 100)) {
+			new_header_length = 100;
+		}
+
+		num_vecs = 0;
+		offset = 0;
+		while (offset < new_header_length) {
+			size_t chunk_size = new_header_length - offset;
+			if (chunk_size > HOMA_BPAGE_SIZE)
+				chunk_size = HOMA_BPAGE_SIZE;
+			vecs[num_vecs].iov_len = chunk_size;
+			vecs[num_vecs].iov_base = receiver.get<char>(offset);
+			offset += chunk_size;
+			num_vecs++;
+		}
+		result = homa_replyv(fd, vecs, num_vecs, receiver.src_addr(),
+				receiver.id());
+		if (result < 0) {
+			log(NORMAL, "FATAL: homa_reply failed for server "
+					"port %d: %s\n",
+					port, strerror(errno));
+			exit(1);
+		}
+		metrics->requests++;
+		metrics->bytes_in += length;
+		metrics->bytes_out += new_header_length;
+
+
+        #endif
 	}
 }
 
