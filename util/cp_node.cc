@@ -73,7 +73,7 @@ bool is_server = false;
 int id = -1;
 double net_gbps = 0.0;
 bool tcp_trunc = true;
-bool one_way = false;
+bool one_way = true;
 int port_receivers = 1;
 int port_threads = 1;
 std::string protocol_string;

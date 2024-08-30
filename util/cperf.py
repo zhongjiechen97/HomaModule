@@ -73,7 +73,7 @@ default_defaults = {
     'client_max':          200,
     'client_ports':        3,
     'log_dir':             'logs/' + time.strftime('%Y%m%d%H%M%S'),
-    # 'log_dir':             'logs/' + '20240518103320',
+    # 'log_dir':             'logs/' + '20240829110409',
     'mtu':                 0,
     'no_trunc':            '',
     'protocol':            'homa',
