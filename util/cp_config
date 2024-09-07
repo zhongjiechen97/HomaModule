@@ -221,7 +221,7 @@ for workload, bw in load_info:
         x, y = get_short_cdf(exp_name)
         plt.plot(x, y, label=spec['label'])
     x, y = get_short_cdf("unloaded_" + workload)
-    plt.plot(x, y, label="Homa best case")
+    plt.plot(x, y, label="eTran best case")
 
     plt.legend(loc="upper right", prop={'size': 9})
     plt.savefig("%s/reports/%s_%s_cdfs.pdf" %

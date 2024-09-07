@@ -182,6 +182,6 @@ for workload, bw in load_info:
     if options.eTran:
         plt.plot(etran_x, etran_y, label="eTran", color=eTran_color)
     plt.plot(homa_x, homa_y, label="Homa", color=homa_color)
-    plt.plot(unloaded_x, unloaded_y, label="Homa best case", color=unloaded_color)
+    plt.plot(unloaded_x, unloaded_y, label="eTran best case", color=unloaded_color)
     plt.legend(loc="upper right", prop={'size': 9})
     plt.savefig("%s/reports/short_cdf_%s.pdf" % (options.log_dir, workload))

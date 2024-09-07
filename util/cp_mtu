@@ -94,7 +94,7 @@ for mtu in mtus:
     plt.plot(x, y, label="Homa MTU %d" % (mtu),
             color=homa_color, linestyle=styles.pop())
 x, y = get_short_cdf(unloaded_exp)
-plt.plot(x, y, label="Homa best case", color=unloaded_color)
+plt.plot(x, y, label="eTran best case", color=unloaded_color)
 
 plt.legend(loc="upper right", prop={'size': 9})
 plt.savefig("%s/reports/mtu_cdfs_%s.pdf" % (options.log_dir, options.workload))

@@ -158,7 +158,7 @@ for fraction in fractions:
     plt.plot(x, y, label="Homa %4.2f Gbps" % (fraction * options.gbps),
             color=homa_color, linestyle=styles.pop())
 x, y = get_short_cdf(unloaded_exp)
-plt.plot(x, y, label="Homa best case", color=unloaded_color)
+plt.plot(x, y, label="eTran best case", color=unloaded_color)
 
 plt.legend(loc="upper right", prop={'size': 9})
 plt.savefig("%s/reports/load_cdfs_%s.pdf" % (options.log_dir, options.workload))
