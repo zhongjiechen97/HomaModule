@@ -19,14 +19,18 @@
 
 from cperf import *
 
+# load_info = [["w2", 3.2]]
+# load_info = [["w3", 14]]
+# load_info = [["w4", 20]]
+# load_info = [["w5", 20]]
 load_info = [["w2", 3.2], ["w3", 14], ["w4", 20], ["w5", 20]]
 
 parser = get_parser(description=
         'Measures slowdown as a function of message size for Homa and TCP.',
         usage='%(prog)s [options]')
 parser.add_argument('--tcp', dest='tcp', type=boolean,
-        default=True, help="Boolean value: indicates whether measurements "
-                "should be run on TCP (default: true)")
+        default=False, help="Boolean value: indicates whether measurements "
+                "should be run on TCP (default: false)")
 parser.add_argument('--dctcp', dest='dctcp', type=boolean,
         default=False, help="Boolean value:: indicates whether measurements "
                 "should be run on DCTCP (default: false)")
@@ -43,8 +47,8 @@ init(options)
 if options.num_servers <= 0:
     servers = range(0, options.num_nodes)
     clients = range(0, options.num_nodes)
-    options.num_clients = options.num_nodes;
-    options.num_servers = options.num_nodes;
+    options.num_clients = options.num_nodes
+    options.num_servers = options.num_nodes
     bw_multiplier = 0.5
 else:
     if options.num_servers >= options.num_nodes:
@@ -53,8 +57,9 @@ else:
     options.num_clients = options.num_nodes - options.num_servers
     servers = range(0, options.num_servers)
     clients = range(options.num_servers, options.num_nodes)
-    options.server_ports = options.server_ports * 2
-    options.client_ports = options.client_ports * 2
+    if options.bottleneck == 0:
+        options.server_ports = options.server_ports * 2
+        options.client_ports = options.client_ports * 2
     options.tcp_server_ports = options.tcp_server_ports * 2
     options.tcp_client_ports = options.tcp_client_ports * 2
     bw_multiplier = min(options.num_servers, options.num_clients) \
@@ -69,18 +74,22 @@ if not options.plot_only:
     for workload, bw in load_info:
         options.workload = workload
         options.gbps = bw * bw_multiplier
-        unloaded_exp = "unloaded_" + workload;
-        homa_exp = "homa_" + workload;
-        tcp_exp = "tcp_" + workload;
-        dctcp_exp = "dctcp_" + workload;
-        if workload == "w2":
-            options.client_max = 80
-        elif workload == "w3":
-            options.client_max = 60
-        elif workload == "w4":
-            options.client_max = 20
-        elif workload == "w5":
-            options.client_max = 10
+        unloaded_exp = "unloaded_" + workload
+        homa_exp = "homa_" + workload
+        tcp_exp = "tcp_" + workload
+        dctcp_exp = "dctcp_" + workload
+
+        options.seconds = 3
+        options.client_max = 40
+
+        # if workload == "w2":
+        #     options.client_max = 80
+        # elif workload == "w3":
+        #     options.client_max = 30
+        # elif workload == "w4":
+        #     options.client_max = 20
+        # elif workload == "w5":
+        #     options.client_max = 20
         try:
             options.protocol = "homa"
             start_servers(range(1, 2), options)
@@ -136,6 +145,7 @@ for workload, bw in load_info:
     log("Generating slowdown plot for %s" % (workload))
     title = "%s %d nodes, %.1f Gbps" % (workload.capitalize(),
             options.num_nodes, bw)
+    title = ""
     ax = start_slowdown_plot(title, 1000, homa_exp)
     if options.tcp:
         plot_slowdown(ax, tcp_exp, "p99", "TCP P99", color=tcp_color)
@@ -144,8 +154,8 @@ for workload, bw in load_info:
         plot_slowdown(ax, dctcp_exp, "p99", "DCTCP P99", color=dctcp_color)
         plot_slowdown(ax, dctcp_exp, "p50", "DCTCP P50", color=dctcp_color2)
     if options.eTran:
-        plot_slowdown(ax, etran_exp, "p99", "eTran P99", color=dctcp_color)
-        plot_slowdown(ax, etran_exp, "p50", "eTran P50", color=dctcp_color2)
+        plot_slowdown(ax, etran_exp, "p99", "eTran P99", color=eTran_color)
+        plot_slowdown(ax, etran_exp, "p50", "eTran P50", color=eTran_color2)
 
     plot_slowdown(ax, homa_exp, "p99", "Homa P99", color=homa_color)
     plot_slowdown(ax, homa_exp, "p50", "Homa P50", color=homa_color2)
@@ -170,7 +180,7 @@ for workload, bw in load_info:
     if options.dctcp:
         plt.plot(dctcp_x, dctcp_y, label="DCTCP", color=dctcp_color)
     if options.eTran:
-        plt.plot(etran_x, etran_y, label="eTran", color=dctcp_color)
+        plt.plot(etran_x, etran_y, label="eTran", color=eTran_color)
     plt.plot(homa_x, homa_y, label="Homa", color=homa_color)
     plt.plot(unloaded_x, unloaded_y, label="Homa best case", color=unloaded_color)
     plt.legend(loc="upper right", prop={'size': 9})

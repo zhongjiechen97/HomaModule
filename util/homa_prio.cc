@@ -41,6 +41,7 @@ double min_drift = 1.0;
 int min_messages = 10000;
 int unsched = 0;
 double unsched_boost = 0.0;
+int bottleneck = 1;
 
 enum Msg_Type {NORMAL, VERBOSE};
 

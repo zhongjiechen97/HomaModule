@@ -72,8 +72,9 @@ default_defaults = {
     # unlimited load (throttle queue inserts take a long time).
     'client_max':          200,
     'client_ports':        3,
-    'log_dir':             'logs/' + time.strftime('%Y%m%d%H%M%S'),
-    # 'log_dir':             'logs/' + '20240829110409',
+    # 'log_dir':             'logs/' + time.strftime('%Y%m%d%H%M%S'),
+    # 'log_dir':             'logs/' + '20240907001758', #20cpu
+    'log_dir':             'logs/' + '20240907021255', #10cpu
     'mtu':                 0,
     'no_trunc':            '',
     'protocol':            'homa',
@@ -81,10 +82,6 @@ default_defaults = {
     'port_threads':        3,
     'seconds':             5,
     'server_ports':        3,
-    'ebpf_client_ports':   4,
-    'ebpf_port_receivers': 1,
-    'ebpf_server_ports':   4,
-    'ebpf_port_threads':   1,
     'tcp_client_ports':    4,
     'tcp_port_receivers':  1,
     'tcp_server_ports':    8,
@@ -92,7 +89,8 @@ default_defaults = {
     'unloaded':            0,
     'unsched':             0,
     'unsched_boost':       0.0,
-    'workload':            ''
+    'workload':            '',
+    'bottleneck':          1,
 }
 
 # Keys are experiment names, and each value is the digested data for that
@@ -136,6 +134,9 @@ homa_color3 =    '#A6C6F6'
 dctcp_color =    '#7A4412'
 dctcp_color2 =   '#CB701D'
 dctcp_color3 =   '#EAA668'
+eTran_color =      '#00B000'
+eTran_color2 =     '#5BD15B'
+eTran_color3 =     '#96E296'
 unloaded_color = '#d62728'
 
 # Default bandwidths to use when running all of the workloads.
@@ -247,6 +248,10 @@ def get_parser(description, usage, defaults = {}):
             metavar='count', default=defaults['port_threads'],
             help='Number of threads listening on each Homa server port '
             '(default: %d)'% (defaults['port_threads']))
+    parser.add_argument('--bottleneck', type=int, dest='bottleneck',
+            metavar='count', default=defaults['bottleneck'],
+            help='Weather to make the host CPUs becomne bottleneck'
+            '(default: %d)'% (defaults['bottleneck']))
     parser.add_argument('-p', '--protocol', dest='protocol',
             choices=['homa', 'tcp', 'dctcp'], default=defaults['protocol'],
             help='Transport protocol to use (default: %s)'
@@ -393,10 +398,16 @@ def start_nodes(r, options):
         if id in active_nodes:
             continue
         vlog("Starting cp_node on node%d" % (id))
-        node = subprocess.Popen(["ssh", "-o", "StrictHostKeyChecking=no",
-                "node%d" % (id), "~/HomaModule/util/cp_node"], encoding="utf-8",
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT)
+        if options.bottleneck == 0:
+            node = subprocess.Popen(["ssh", "-o", "StrictHostKeyChecking=no",
+                    "node%d" % (id), "~/HomaModule/util/cp_node"], encoding="utf-8",
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT)
+        else:
+            node = subprocess.Popen(["ssh", "-o", "StrictHostKeyChecking=no",
+                    "node%d" % (id), "sudo ethtool -L ens1f1np1 combined 10 && sudo ethtool -X ens1f1np1 equal 10 && taskset -c 0-9 ~/HomaModule/util/cp_node"], encoding="utf-8",
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT)
         fl = fcntl.fcntl(node.stdin, fcntl.F_GETFL)
         fcntl.fcntl(node.stdin, fcntl.F_SETFL, fl | os.O_NONBLOCK)
         fl = fcntl.fcntl(node.stdout, fcntl.F_GETFL)
